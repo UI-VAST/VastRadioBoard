@@ -39,6 +39,26 @@ typedef struct recieved_data{
 recieved_data rx_data;
 
 
+
+
+void check_for_commands(){
+  if(rx_data.trigger_cutdown){
+    myPacket.cutdown_status = true;
+  }
+  if(rx_data.trigger_parachute){
+    myPacket.parachute_status = true;
+  }
+  if(rx_data.RunTimer = true){
+    myPacket.timer_running = true;
+  }
+  if(rx_data.RunTimer = false){
+    myPacket.timer_running = false;
+  }
+  if(rx_data.update_cutdown_time){
+    myPacket.cutdown_time = rx_data.cutdown_time;
+  }
+}
+
 void read_gps(){
   if(gpsSerial.available() > 0){
     if(gpsSerial.available() > 0){
