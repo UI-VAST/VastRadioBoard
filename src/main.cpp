@@ -117,12 +117,11 @@ void Send_packet(){
     lora_PacketSerial.send(payload, sizeof(payload));
 }
 
-
 void setup() {
   rfd.begin(57600, SERIAL_8N1, 19, 18);
-  lora.begin(57600, SERIAL_8N1, 16, 17);
+  lora.begin(9600, SERIAL_8N1, 17, 16);
   gpsSerial.begin(GPSBaud, SWSERIAL_8N1, 13, 12, false, 64);
-
+  //Serial.begin(115200);
   rfd_PacketSerial.setStream(&rfd);
   rfd_PacketSerial.setPacketHandler(&rfd_PacketReceived);
   lora_PacketSerial.setStream(&lora);
@@ -130,16 +129,17 @@ void setup() {
 
 
 }
+
 unsigned long MillisCount1 = 0;
 unsigned long MillisCount2 = 0;
-
+ 
 void loop() {
 
   //run at 10hz
   unsigned long currentMillis = millis();
   if(currentMillis - MillisCount1 >= 100){
     MillisCount1 = currentMillis;
-    
+    Send_packet();
   }
   //run at 1hz
   if(currentMillis - MillisCount2 >= 1000){
