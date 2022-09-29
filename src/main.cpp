@@ -48,6 +48,8 @@ typedef struct recieved_data{
 } recieved_data;
 recieved_data rx_data;
 
+
+
 void parachuteUpdate(){
   if(myPacket.parachute_status == true){
       digitalWrite(ParachutePin, HIGH);
@@ -60,7 +62,7 @@ void parachuteUpdate(){
 void cutdownUpdate(){
   if(myPacket.cutdown_status == true){
     if(nichromeON = false){
-      CutdownStart = millis();
+      CutDownStart = millis();
       digitalWrite(CutDownPin, HIGH);
       nichromeON = true;
     }
@@ -142,6 +144,8 @@ void lora_PacketReceived(const uint8_t* buffer, size_t size)
   }
 }
 
+
+
 void Send_packet(){
     myPacket.packetcount++;
     uint32_t crc = CRC::Calculate(&myPacket, sizeof(myPacket), CRC::CRC_32());
@@ -166,7 +170,7 @@ void setup() {
   myPacket.cutdown_time = 3600;
   myPacket.parachute_status = false;
 
-  pinMode(CutDownPinm OUTPUT);
+  pinMode(CutDownPin, OUTPUT);
   pinMode(ParachutePin, OUTPUT);
 }
 
@@ -175,6 +179,7 @@ void loop() {
   lora_PacketSerial.update();
   cutdownUpdate();
   parachuteUpdate();
+  
   //run at 10hz
   unsigned long currentMillis = millis();
   if(currentMillis - MillisCount1 >= 100){
