@@ -6,8 +6,8 @@
 #include "CRC.h"
 
 #define CutDownNichromeTime 5000 //milli sec
-#define CutDownPin 34
-#define ParachutePin 35
+#define CutDownPin 25
+#define ParachutePin 26
 bool nichromeON = false;
 unsigned long CutDownStart = 0;
 
@@ -150,17 +150,29 @@ void Send_packet(){
     myPacket.packetcount++;
     uint32_t crc = CRC::Calculate(&myPacket, sizeof(myPacket), CRC::CRC_32());
     uint8_t payload[sizeof(myPacket)+sizeof(crc)];
-    memcpy(&payload[0], &myPacket, sizeof(myPacket));
+    memcpy(&payload, &myPacket, sizeof(myPacket));
     memcpy(&payload[sizeof(myPacket)], &crc, sizeof(crc));
-    rfd_PacketSerial.send(payload, sizeof(payload));
-    lora_PacketSerial.send(payload, sizeof(payload));
+    
+    for(int i = 0; i < sizeof(payload); i++){
+      Serial.print(i);
+      Serial.print(" ");
+      Serial.println(payload[i]);
+    }
+    
+    Serial.print("packet size ");
+    Serial.println(sizeof(myPacket));
+    Serial.print("payload ");
+    Serial.println(sizeof(payload));
+
+    rfd_PacketSerial.send(&payload[0], sizeof(payload));
+    lora_PacketSerial.send(&payload[0], sizeof(payload));
 }
 
 void setup() {
-  rfd.begin(57600, SERIAL_8N1, 19, 18);
-  lora.begin(9600, SERIAL_8N1, 17, 16);
-  gpsSerial.begin(GPSBaud, SWSERIAL_8N1, 13, 12, false, 64);
-  //Serial.begin(115200);
+  rfd.begin(57600, SERIAL_8N1, 17, 16);
+  lora.begin(57600, SERIAL_8N1, 19, 18);
+  //gpsSerial.begin(GPSBaud, SWSERIAL_8N1, 13, 12, false, 64);
+  Serial.begin(115200);
   rfd_PacketSerial.setStream(&rfd);
   rfd_PacketSerial.setPacketHandler(&rfd_PacketReceived);
   lora_PacketSerial.setStream(&lora);
@@ -169,6 +181,7 @@ void setup() {
   myPacket.cutdown_status = false;
   myPacket.cutdown_time = 3600;
   myPacket.parachute_status = false;
+  myPacket.packetcount = 0;
 
   pinMode(CutDownPin, OUTPUT);
   pinMode(ParachutePin, OUTPUT);
@@ -184,7 +197,7 @@ void loop() {
   unsigned long currentMillis = millis();
   if(currentMillis - MillisCount1 >= 100){
     MillisCount1 = currentMillis;
-    Send_packet();
+    
     check_for_commands();
   }
 
@@ -192,6 +205,7 @@ void loop() {
   if(currentMillis - MillisCount2 >= 1000){
     MillisCount2 = currentMillis;
     read_gps();
+    Send_packet();
   }
     
 }
