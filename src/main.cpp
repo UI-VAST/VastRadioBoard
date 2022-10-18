@@ -15,9 +15,7 @@ unsigned long CutDownStart = 0;
 static const uint32_t GPSBaud = 9600;
 TinyGPSPlus gps;
 PacketSerial rfd_PacketSerial;
-PacketSerial lora_PacketSerial;
-SoftwareSerial gpsSerial(8, 9);
-HardwareSerial lora(2);
+HardwareSerial gpsSerial(2);
 HardwareSerial rfd(1);
 
 unsigned long MillisCount1 = 0;
@@ -100,10 +98,13 @@ void check_for_commands(){
 
 void read_gps(){
   if(gpsSerial.available() > 0){
+    Serial.println("gps avalible");
     if(gps.encode(gpsSerial.read())){
+      Serial.println("gps decoded");
       if(gps.location.isValid()){
         myPacket.lat = gps.location.lat();
         myPacket.lng = gps.location.lng();
+
       }
       if(gps.altitude.isValid()){
         myPacket.alt = gps.altitude.meters();
@@ -131,19 +132,6 @@ void rfd_PacketReceived(const uint8_t* buffer, size_t size)
   }
 }
 
-void lora_PacketReceived(const uint8_t* buffer, size_t size)
-{
-  uint32_t crc1 = CRC::Calculate(buffer, size, CRC::CRC_32());
-  uint32_t crc2;
-  memcpy(&crc2, &buffer[sizeof(rx_data)], sizeof(crc2));
-  if(crc1 == crc2){
-    memcpy(&rx_data, &buffer, sizeof(rx_data)); 
-  }
-  else{
-    myPacket.lora_bad_packet++;
-  }
-}
-
 
 
 void Send_packet(){
@@ -153,6 +141,7 @@ void Send_packet(){
     memcpy(&payload, &myPacket, sizeof(myPacket));
     memcpy(&payload[sizeof(myPacket)], &crc, sizeof(crc));
     
+    /*
     for(int i = 0; i < sizeof(payload); i++){
       Serial.print(i);
       Serial.print(" ");
@@ -163,20 +152,16 @@ void Send_packet(){
     Serial.println(sizeof(myPacket));
     Serial.print("payload ");
     Serial.println(sizeof(payload));
-
+    */
     rfd_PacketSerial.send(&payload[0], sizeof(payload));
-    lora_PacketSerial.send(&payload[0], sizeof(payload));
 }
 
 void setup() {
-  rfd.begin(57600, SERIAL_8N1, 17, 16);
-  lora.begin(57600, SERIAL_8N1, 19, 18);
-  //gpsSerial.begin(GPSBaud, SWSERIAL_8N1, 13, 12, false, 64);
+  rfd.begin(57600, SERIAL_8N1, 33, 32);
+  gpsSerial.begin(GPSBaud, SERIAL_8N1, 17, 16);
   Serial.begin(115200);
   rfd_PacketSerial.setStream(&rfd);
   rfd_PacketSerial.setPacketHandler(&rfd_PacketReceived);
-  lora_PacketSerial.setStream(&lora);
-  lora_PacketSerial.setPacketHandler(&lora_PacketReceived);
 
   myPacket.cutdown_status = false;
   myPacket.cutdown_time = 3600;
@@ -189,7 +174,6 @@ void setup() {
 
 void loop() {
   rfd_PacketSerial.update();
-  lora_PacketSerial.update();
   cutdownUpdate();
   parachuteUpdate();
   
@@ -206,6 +190,10 @@ void loop() {
     MillisCount2 = currentMillis;
     read_gps();
     Send_packet();
+    Serial.print("lat: ");
+    Serial.println(myPacket.lat);
+    Serial.print("lng: ");
+    Serial.println(myPacket.lng);
   }
     
 }
