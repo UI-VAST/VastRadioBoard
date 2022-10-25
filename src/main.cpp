@@ -88,9 +88,6 @@ void check_for_commands(){
   if(rx_data.update_cutdown_time){
     myPacket.cutdown_time = rx_data.cutdown_time;
   }
-  if(myPacket.timer_running == true){
-    myPacket.cutdown_time--;
-  }
   if(myPacket.cutdown_time < 1){
     myPacket.cutdown_status = true;
   }
@@ -194,6 +191,10 @@ void loop() {
     Serial.println(myPacket.lat);
     Serial.print("lng: ");
     Serial.println(myPacket.lng);
+
+    if(myPacket.timer_running == true){
+    myPacket.cutdown_time--;
+    }
   }
     
 }
