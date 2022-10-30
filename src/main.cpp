@@ -2,8 +2,8 @@
 #include <TinyGPS++.h>
 #include <HardwareSerial.h>
 #include <PacketSerial.h>
-#include <SoftwareSerial.h>
 #include "CRC.h"
+
 
 #define CutDownNichromeTime 5000 //milli sec
 #define CutDownPin 25
@@ -14,9 +14,11 @@ unsigned long CutDownStart = 0;
 
 static const uint32_t GPSBaud = 9600;
 TinyGPSPlus gps;
+
 PacketSerial rfd_PacketSerial;
 HardwareSerial gpsSerial(2);
 HardwareSerial rfd(1);
+
 
 unsigned long MillisCount1 = 0;
 unsigned long MillisCount2 = 0;
@@ -93,12 +95,14 @@ void check_for_commands(){
   }
 }
 
+
 void read_gps(){
   if(gpsSerial.available() > 0){
-    Serial.println("gps avalible");
+    //Serial.println("gps avalible");
     if(gps.encode(gpsSerial.read())){
-      Serial.println("gps decoded");
+      //Serial.println("gps decoded");
       if(gps.location.isValid()){
+        digitalWrite(LED_BUILTIN, HIGH);
         myPacket.lat = gps.location.lat();
         myPacket.lng = gps.location.lng();
 
@@ -115,6 +119,9 @@ void read_gps(){
     }
   }
 }
+
+
+
 
 void rfd_PacketReceived(const uint8_t* buffer, size_t size)
 {
@@ -156,24 +163,29 @@ void Send_packet(){
 void setup() {
   rfd.begin(57600, SERIAL_8N1, 33, 32);
   gpsSerial.begin(GPSBaud, SERIAL_8N1, 17, 16);
+  
   Serial.begin(115200);
   rfd_PacketSerial.setStream(&rfd);
   rfd_PacketSerial.setPacketHandler(&rfd_PacketReceived);
+
 
   myPacket.cutdown_status = false;
   myPacket.cutdown_time = 3600;
   myPacket.parachute_status = false;
   myPacket.packetcount = 0;
-
+  pinMode(LED_BUILTIN, OUTPUT);
   pinMode(CutDownPin, OUTPUT);
   pinMode(ParachutePin, OUTPUT);
+  //digitalWrite(LED_BUILTIN, HIGH);
 }
 
 void loop() {
   rfd_PacketSerial.update();
   cutdownUpdate();
   parachuteUpdate();
-  
+  read_gps();
+
+
   //run at 10hz
   unsigned long currentMillis = millis();
   if(currentMillis - MillisCount1 >= 100){
@@ -185,13 +197,14 @@ void loop() {
   //run at 1hz
   if(currentMillis - MillisCount2 >= 1000){
     MillisCount2 = currentMillis;
-    read_gps();
+    
     Send_packet();
     Serial.print("lat: ");
-    Serial.println(myPacket.lat);
+    Serial.println(myPacket.lat, 12);
     Serial.print("lng: ");
-    Serial.println(myPacket.lng);
-
+    Serial.println(myPacket.lng, 12);
+    Serial.print("alt: ");
+    Serial.println(myPacket.alt);
     if(myPacket.timer_running == true){
     myPacket.cutdown_time--;
     }
