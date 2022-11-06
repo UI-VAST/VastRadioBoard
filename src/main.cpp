@@ -61,13 +61,15 @@ void parachuteUpdate(){
 
 void cutdownUpdate(){
   if(myPacket.cutdown_status == true){
-    if(nichromeON = false){
+    if(nichromeON == false){
       CutDownStart = millis();
       digitalWrite(CutDownPin, HIGH);
+      digitalWrite(LED_BUILTIN, HIGH);
       nichromeON = true;
     }
     if(millis() > (CutDownStart + CutDownNichromeTime)){
       digitalWrite(CutDownPin, LOW);
+      digitalWrite(LED_BUILTIN, LOW);
       nichromeON = false;
       myPacket.cutdown_status = false;
     }
@@ -75,22 +77,22 @@ void cutdownUpdate(){
 }
 
 void check_for_commands(){
-  if(rx_data.trigger_cutdown){
+  if(rx_data.trigger_cutdown == true){
     myPacket.cutdown_status = true;
   }
-  if(rx_data.trigger_parachute){
+  if(rx_data.trigger_parachute == true){
     myPacket.parachute_status = true;
   }
-  if(rx_data.RunTimer = true){
+  if(rx_data.RunTimer == true){
     myPacket.timer_running = true;
   }
-  if(rx_data.RunTimer = false){
+  if(rx_data.RunTimer == false){
     myPacket.timer_running = false;
   }
-  if(rx_data.update_cutdown_time){
+  if(rx_data.update_cutdown_time == true){
     myPacket.cutdown_time = rx_data.cutdown_time;
   }
-  if(myPacket.cutdown_time < 1){
+  if(myPacket.cutdown_time < 1 && myPacket.cutdown_time > -3){
     myPacket.cutdown_status = true;
   }
 }
@@ -121,18 +123,16 @@ void read_gps(){
 }
 
 
-
-
 void rfd_PacketReceived(const uint8_t* buffer, size_t size)
 {
-  uint32_t crc1 = CRC::Calculate(buffer, size, CRC::CRC_32());
+  uint32_t crc1 = CRC::Calculate(&buffer[0], sizeof(rx_data), CRC::CRC_32());
   uint32_t crc2;
   memcpy(&crc2, &buffer[sizeof(rx_data)], sizeof(crc2));
   if(crc1 == crc2){
-    memcpy(&rx_data, &buffer, sizeof(rx_data)); 
+    memcpy(&rx_data, buffer, sizeof(rx_data)); 
   }
   else{
-    myPacket.rfd_bad_packet++;
+    //bad packet
   }
 }
 
@@ -170,7 +170,7 @@ void setup() {
 
 
   myPacket.cutdown_status = false;
-  myPacket.cutdown_time = 3600;
+  myPacket.cutdown_time = 3600;  
   myPacket.parachute_status = false;
   myPacket.packetcount = 0;
   pinMode(LED_BUILTIN, OUTPUT);
@@ -184,14 +184,14 @@ void loop() {
   cutdownUpdate();
   parachuteUpdate();
   read_gps();
-
+  check_for_commands();
 
   //run at 10hz
   unsigned long currentMillis = millis();
   if(currentMillis - MillisCount1 >= 100){
     MillisCount1 = currentMillis;
     
-    check_for_commands();
+    
   }
 
   //run at 1hz
